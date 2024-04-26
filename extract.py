@@ -15,7 +15,7 @@ def extract_and_store_violations_in_mongo(context) -> bool:
     db = client["DapDatabase"]
     collection = db['violations']
 
-    file_path = "E:\\speed_data.json"  # Use double backslashes for Windows paths
+    file_path = "E:\\speed_data.json"  # use double backslashes for Windows paths
 
     try:
         # Load JSON data from file
