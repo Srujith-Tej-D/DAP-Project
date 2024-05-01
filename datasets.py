@@ -8,7 +8,7 @@ import logging
 # Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-@op
+
 def file_download(url: str, destination_path: str) -> bool:
     response = requests.get(url, stream=True)
     if response.status_code == 200:
@@ -22,9 +22,9 @@ def file_download(url: str, destination_path: str) -> bool:
 @op
 def saving_datasets():
     json_url = "https://data.cityofchicago.org/api/views/hhkd-xvj4/rows.json?accessType=DOWNLOAD"
-    json_destination_path = "E:\\violations.json"
+    json_destination_path = "violations.json"
     csv_url = "https://data.cityofchicago.org/api/views/85ca-t3if/rows.csv?accessType=DOWNLOAD"
-    csv_destination_path = "E:\\crashes.csv"
+    csv_destination_path = "crashes.csv"
 
     if file_download(json_url, json_destination_path):
         logging.info("JSON file saved as: {}".format(json_destination_path))

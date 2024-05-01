@@ -11,17 +11,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 
 @op(out=Out(bool))
-def extract_and_store_violations_in_mongo() -> bool:
+def ingesting_violations_json_to_mongo() -> bool:
     mongo_connection_string = "mongodb://dap:dapsem1@localhost:27017/admin"
     client = pymongo.MongoClient(mongo_connection_string)
     db = client["DapDatabase"]
     collection = db['violations']
 
-<<<<<<< Updated upstream
-    file_path = "E:\\speed_data.json"  # use double backslashes for Windows paths
-=======
-    file_path = r"E:\violations.json"  # Use double backslashes for Windows paths
->>>>>>> Stashed changes
+    file_path = r"violations.json"  # Use double backslashes for Windows paths
 
     try:
         # Load JSON data from file
@@ -37,7 +33,7 @@ def extract_and_store_violations_in_mongo() -> bool:
         for data_dict in data_dicts:
             # Use row_id as the unique identifier for MongoDB documents
             data_dict['violation_date'] = datetime.strptime(data_dict['violation_date'], "%Y-%m-%dT%H:%M:%S")
-            data_dict['violations'] = int(data_dict['violations'])
+            #data_dict['violations'] = int(data_dict['violations'])
             data_dict["_id"] = data_dict["row_id"]
             try:
                 # Insert data into MongoDB
@@ -47,41 +43,6 @@ def extract_and_store_violations_in_mongo() -> bool:
                 continue
 
         logger.info("Data successfully loaded and inserted into MongoDB.")
-        result = True
-
-    except Exception as e:
-        logger.error("An error occurred: %s", e)
-        result = False
-
-    return result
-@op(out=Out(bool))
-def ingest_csv_to_mongo() -> bool:
-    mongo_connection_string = "mongodb://dap:dapsem1@localhost:27017/admin"
-    client = pymongo.MongoClient(mongo_connection_string)
-    db = client["DapDatabase"]
-
-    traffic_crashes_path = r"E:\crashes.csv"
-    collection_name = "traffic_crashes"  # Specify the MongoDB collection name
-
-    try:
-        with open(traffic_crashes_path, 'r') as csv_file:
-            reader = csv.DictReader(csv_file)
-            all_data = []
-
-            for row in reader:
-                # Parse CRASH_DATE and DATE_POLICE_NOTIFIED to datetime objects
-                if 'CRASH_DATE' in row:
-                    row['CRASH_DATE'] = datetime.strptime(row['CRASH_DATE'], '%m/%d/%Y %I:%M:%S %p')
-                if 'DATE_POLICE_NOTIFIED' in row:
-                    row['DATE_POLICE_NOTIFIED'] = datetime.strptime(row['DATE_POLICE_NOTIFIED'], '%m/%d/%Y %I:%M:%S %p')
-                if 'POSTED_SPEED_LIMIT' in row:
-                    row['POSTED_SPEED_LIMIT'] = int(row['POSTED_SPEED_LIMIT'])
-                all_data.append(row)
-
-            db[collection_name].insert_many(all_data)
-
-
-        logger.info("CSV data successfully loaded and inserted into MongoDB.")
         result = True
 
     except Exception as e:
