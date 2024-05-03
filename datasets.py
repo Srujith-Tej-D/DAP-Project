@@ -16,7 +16,7 @@ def file_download(url: str, destination_path: str) -> bool:
             f.write(response.content)
         return True
     else:
-        logging.error(f"Failed to download the file from {url}")
+        logging.error(f"Failed to download the file from data catlog {url}")
         return False
 
 @op
