@@ -48,7 +48,7 @@ def mongo_extraction(context: OpExecutionContext,  ingesting_violations_json_to_
         violations_data = list(db['violations'].find({
             "violation_date": {"$gte": start_of_2023}
         }))
-        # Retrieve and convert data from "occupancy" collection
+        # Retrieve and convert data from mongo collections
         violations_df = pd.DataFrame(violations_data)
         traffic_df = pd.DataFrame(traffic_crashes_data)
         context.log.info("Successfully extracted data from Mongodb.")
