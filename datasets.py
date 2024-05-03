@@ -13,11 +13,6 @@ def file_download(url, destination_path):
         logging.info("File exists going to next step")
         return True
     else:
-<<<<<<< Updated upstream
-        logging.error(f"Failed to download the file from data catlog {url}")
-        return False
-
-=======
         try:
             with open(destination_path, "wb") as file:
                 response = requests.get(url)
@@ -26,7 +21,6 @@ def file_download(url, destination_path):
         except Exception as e:
             logging.error(f"Failed to download file from {url}: {e}")
             return False
->>>>>>> Stashed changes
 @op
 def saving_datasets(context : OpExecutionContext):
     json_url = "https://data.cityofchicago.org/api/views/hhkd-xvj4/rows.json?accessType=DOWNLOAD"
