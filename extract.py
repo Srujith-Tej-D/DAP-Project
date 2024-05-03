@@ -1,4 +1,4 @@
-from dagster import op, Out
+from dagster import op, Out , OpExecutionContext
 from datetime import datetime
 import pymongo
 from pymongo import errors
@@ -6,13 +6,62 @@ import json
 import logging
 import csv
 from datasets import *
+<<<<<<< Updated upstream
+=======
 
-# Set up a basic logger
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
+# Set up a basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+>>>>>>> Stashed changes
+
 
 @op(out=Out(bool))
+<<<<<<< Updated upstream
 def ingesting_violations_json_to_mongo(saving_datasets) -> bool:
+=======
+
+
+def ingesting_crashes_csv_to_mongo(context : OpExecutionContext, saving_datasets) -> bool:
+    mongo_connection_string = "mongodb://dap:dapsem1@localhost:27017/admin"
+    client = pymongo.MongoClient(mongo_connection_string)
+    db = client["DapDatabase"]
+
+    traffic_crashes_path = r"crashes.csv"
+    collection_name = "traffic_crashes"  # Specify the MongoDB collection name
+
+    try:
+        with open(traffic_crashes_path, 'r') as csv_file:
+            reader = csv.DictReader(csv_file)
+            all_data = []
+
+            for row in reader:
+                # Parse CRASH_DATE and DATE_POLICE_NOTIFIED to datetime objects
+                if 'CRASH_DATE' in row:
+                    row['CRASH_DATE'] = datetime.strptime(row['CRASH_DATE'], '%m/%d/%Y %I:%M:%S %p')
+                if 'DATE_POLICE_NOTIFIED' in row:
+                    row['DATE_POLICE_NOTIFIED'] = datetime.strptime(row['DATE_POLICE_NOTIFIED'], '%m/%d/%Y %I:%M:%S %p')
+                if 'POSTED_SPEED_LIMIT' in row:
+                    row['POSTED_SPEED_LIMIT'] = int(row['POSTED_SPEED_LIMIT'])
+                all_data.append(row)
+
+            db[collection_name].insert_many(all_data)
+
+
+        logging.info("Violations Json Ingestion successfull")
+        context.log.info("Violations Json Ingestion successfull")
+        result = True
+
+    except Exception as e:
+        logging.error("An error occurred: %s", e)
+        result = False
+
+    return result
+
+
+
+@op(out=Out(bool))
+def ingesting_violations_json_to_mongo(context : OpExecutionContext,saving_datasets) -> bool:
+>>>>>>> Stashed changes
     mongo_connection_string = "mongodb://dap:dapsem1@localhost:27017/admin"
     client = pymongo.MongoClient(mongo_connection_string)
     db = client["DapDatabase"]
@@ -39,18 +88,22 @@ def ingesting_violations_json_to_mongo(saving_datasets) -> bool:
             try:
                 # Insert data into MongoDB
                 collection.insert_one(data_dict)
+                
             except errors.DuplicateKeyError as dke:
-                logger.error("Duplicate Key Error: %s", dke)
+                logging.error("Duplicate Key Error: %s", dke)
                 continue
-
-        logger.info("Data successfully loaded and inserted into MongoDB.")
+        logging.info("Violations Json Ingestion successfull")
+        context.log.info("Violations Json Ingestion successfull")
+        
         result = True
 
+
     except Exception as e:
-        logger.error("An error occurred: %s", e)
+        logging.error("An error occurred: %s", e)
         result = False
 
     return result
+<<<<<<< Updated upstream
 @op(out=Out(bool))
 
 
@@ -88,3 +141,5 @@ def ingesting_crashes_csv_to_mongo(saving_datasets) -> bool:
         result = False
 
     return result
+=======
+>>>>>>> Stashed changes
