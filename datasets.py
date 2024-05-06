@@ -1,13 +1,14 @@
+#Importing all the required libraries
 from dagster import op, fs_io_manager ,build_op_context , OpExecutionContext
 import requests
 import os
-
 import requests
 import logging
 
 # Setup basic logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+#functoion to downoad files from internet
 def file_download(url, destination_path):
     if os.path.exists(destination_path):
         logging.info("File exists going to next step")
@@ -22,9 +23,11 @@ def file_download(url, destination_path):
             logging.error(f"Failed to download file from {url}: {e}")
             return False
 @op
-def saving_datasets(context : OpExecutionContext):
+def saving_datasets(context : OpExecutionContext): #Dagster op to downoad datasets t
+    #Dataset 1 violations
     json_url = "https://data.cityofchicago.org/api/views/hhkd-xvj4/rows.json?accessType=DOWNLOAD"
     json_destination_path = "violations.json"
+    #Dataset 2 crashses
     logging.info("Started Downloading violations.json")
     context.log.info("Started Downloading violations.json")
     csv_url = "https://data.cityofchicago.org/api/views/85ca-t3if/rows.csv?accessType=DOWNLOAD"
