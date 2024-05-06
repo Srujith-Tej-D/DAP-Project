@@ -1,12 +1,14 @@
 bokeh
-cassandra-driver
 dagster
 dagster-pandas
 dagit
+geopandas
+shapely
 pandas
+pymongo
+requests
 pendulum
 psycopg2
 pymongo
 sqlalchemy
 plotly
-geopandas
