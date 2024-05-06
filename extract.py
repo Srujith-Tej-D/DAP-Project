@@ -1,3 +1,4 @@
+#imporing all the required Libraries
 from dagster import op, Out , OpExecutionContext
 from datetime import datetime
 import pymongo
@@ -12,16 +13,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 
-@op(out=Out(bool))
-
-
+@op(out=Out(bool))  #Extracting Csv data from file and ingesting it to Mongo Db
 def ingesting_crashes_csv_to_mongo(context : OpExecutionContext, saving_datasets) -> bool:
     mongo_connection_string = "mongodb://dap:dapsem1@localhost:27017/admin"
     client = pymongo.MongoClient(mongo_connection_string)
     db = client["DapDatabase"]
 
     traffic_crashes_path = r"crashes.csv"
-    collection_name = "traffic_crashes"  # Specify the MongoDB collection name
+    collection_name = "traffic_crashes"  # Our MongoDb collection Name for Crashes
 
     try:
         with open(traffic_crashes_path, 'r') as csv_file:
@@ -29,7 +28,7 @@ def ingesting_crashes_csv_to_mongo(context : OpExecutionContext, saving_datasets
             all_data = []
 
             for row in reader:
-                # Parse CRASH_DATE and DATE_POLICE_NOTIFIED to datetime objects
+                # Parsing CRASH_DATE and DATE_POLICE_NOTIFIED to datetime columns
                 if 'CRASH_DATE' in row:
                     row['CRASH_DATE'] = datetime.strptime(row['CRASH_DATE'], '%m/%d/%Y %I:%M:%S %p')
                 if 'DATE_POLICE_NOTIFIED' in row:
@@ -53,14 +52,14 @@ def ingesting_crashes_csv_to_mongo(context : OpExecutionContext, saving_datasets
 
 
 
-@op(out=Out(bool))
+@op(out=Out(bool)) #Extracting Csv data from file and ingesting it to Mongo Db
 def ingesting_violations_json_to_mongo(context : OpExecutionContext,saving_datasets) -> bool:
     mongo_connection_string = "mongodb://dap:dapsem1@localhost:27017/admin"
     client = pymongo.MongoClient(mongo_connection_string)
     db = client["DapDatabase"]
-    collection = db['violations']
+    collection = db['violations']  # Our MongoDb collection Name for violations
 
-    file_path = r"violations.json"  # Use double backslashes for Windows paths
+    file_path = r"violations.json"  
 
     try:
         # Load JSON data from file
@@ -76,7 +75,6 @@ def ingesting_violations_json_to_mongo(context : OpExecutionContext,saving_datas
         for data_dict in data_dicts:
             # Use row_id as the unique identifier for MongoDB documents
             data_dict['violation_date'] = datetime.strptime(data_dict['violation_date'], "%Y-%m-%dT%H:%M:%S")
-            #data_dict['violations'] = int(data_dict['violations'])
             data_dict["_id"] = data_dict["row_id"]
             try:
                 # Insert data into MongoDB
