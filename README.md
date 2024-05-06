@@ -20,11 +20,11 @@ File Info: -
              4. etl.py                 ---    It executes all the OP's as a Pipeline.
              5. visuals.py             ---    Contains all the visualizations used to answer the research questions.
              6. geo_export*            ---    Files to helps for transforming the lattitude and longitude to text location.
-             7. env_deps.yml           ---    Containes all the required libraries to be installed before running.
+             7. pre.txt                ---    Containes all the required libraries to be installed before running.
              
               
 Note : - 
-          Install all the libraries mention in env_deps.yml before executing the etl.py or visuals.py
+          Install all the libraries mention in pre.txt with "pip install -r pre.txt" before executing the etl.py or visuals.py
           Modify the username and pasword along with db name in both MongoDB and Postgresql before executing
 
 
