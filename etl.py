@@ -1,9 +1,11 @@
+#imporing all the required Libraries
 from dagster import job
 from extract import *
 from datasets import *
 from transform_n_load import *
 
 
+#Creating a Dagster Job to include all our Op's with dependency 
 @job
 def my_data_pipeline():
     downloaded_data = saving_datasets()
