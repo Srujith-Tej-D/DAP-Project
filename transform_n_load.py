@@ -1,3 +1,4 @@
+#imporing all the required Libraries
 import pymongo
 from pymongo import MongoClient
 from sqlalchemy import create_engine
@@ -17,6 +18,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 
 
+# Creating a Dagster OP to extract datafrom MongoDb by specifying dependency of OP's ingesting_violations_json_to_mongo & ingesting_crashes_csv_to_mongo 
 
 @op(
     ins={"ingesting_violations_json_to_mongo": In(), "ingesting_crashes_csv_to_mongo": In()},
@@ -27,9 +29,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 )
 
 def mongo_extraction(context: OpExecutionContext,  ingesting_violations_json_to_mongo, ingesting_crashes_csv_to_mongo):
-
+    
     mongo_connection_string = "mongodb://dap:dapsem1@localhost:27017/admin"
     start_of_2023 = datetime(2023, 1, 1)
+    #Extracting Data from MongoDB only from 2023
 
     try:
         # Connect to MongoDB
@@ -38,17 +41,17 @@ def mongo_extraction(context: OpExecutionContext,  ingesting_violations_json_to_
         context.log.info("Connected to MongoDB successfully.")
         logging.info("Connected to MongoDB successfully.")
 
-        # Extract 'traffic_crashes' data
+        # Extract 'traffic_crashes' data from specified DATE
         traffic_crashes_data = list(db['traffic_crashes'].find({
             "CRASH_DATE": {"$gte": start_of_2023}
         }))
         context.log.info(f"Extracted {len(traffic_crashes_data)} entries from 'traffic_crashes' collection.")
 
-        # Extract 'violations' data
+        # Extract 'violations' data from specified DATE
         violations_data = list(db['violations'].find({
             "violation_date": {"$gte": start_of_2023}
         }))
-        # Retrieve and convert data from mongo collections
+        # Converting the Extracted data to pandas dataframe for further operations
         violations_df = pd.DataFrame(violations_data)
         traffic_df = pd.DataFrame(traffic_crashes_data)
         context.log.info("Successfully extracted data from Mongodb.")
@@ -66,6 +69,10 @@ def mongo_extraction(context: OpExecutionContext,  ingesting_violations_json_to_
         raise
 
 
+
+
+# Creating a Dagster OP for transform and load with dependency of "violations_df" & traffic_df Dataframes
+
 @op(
     ins={
         "violations_df": In(dagster_type=pd.DataFrame),
@@ -79,12 +86,12 @@ def transform_and_load(context: OpExecutionContext, violations_df: pd.DataFrame,
     
     
     try:
-
+        # loadging shape file foe geo data
         shapefile_path = "geo_export_bf89c8ee-f6be-45ed-9150-6c1145a167fe.shp"
         gdf = gpd.read_file(shapefile_path)
         
 
-        # Define columns to drop
+        
         traffic_field_drop = [
             "CRASH_DATE_EST_I" , "LANE_CNT" , "REPORT_TYPE" , "INTERSECTION_RELATED_I" , "NOT_RIGHT_OF_WAY_I" , 
                       "DATE_POLICE_NOTIFIED" , "STREET_NO" , "STREET_DIRECTION" , "STREET_NAME" , "BEAT_OF_OCCURRENCE" , "PHOTOS_TAKEN_I",
@@ -93,7 +100,7 @@ def transform_and_load(context: OpExecutionContext, violations_df: pd.DataFrame,
                       "INJURIES_UNKNOWN" , "LOCATION"
         ]
 
-        # Drop unnecessary columns
+        # Drop unnecessary columns in traffic
         for column in traffic_field_drop:
             traffic_df.drop(columns=[column], inplace=True, errors='ignore')
 
@@ -103,7 +110,7 @@ def transform_and_load(context: OpExecutionContext, violations_df: pd.DataFrame,
             "meta3", "meta4", "x_coordinate", "y_coordinate" , "location"
         ]
          
-         # Drop unnecessary columns
+         # Drop unnecessary columns in violations
         for column in violations_fields_drop:
             violations_df.drop(columns=[column], inplace=True, errors='ignore')
 
@@ -141,9 +148,11 @@ def transform_and_load(context: OpExecutionContext, violations_df: pd.DataFrame,
 
         # Add an initial CRASH_PLACE column with all values set to None
         violations_df['VIOLATION_PLACE'] = None
-# Add an initial CRASH_PLACE column with all values set to None
+        # Add an initial CRASH_PLACE column with all values set to None
         traffic_df['CRASH_PLACE'] = None
 
+
+        # Fetching CRASH_PLACE with shape file and geo pandas
         for idx, row in traffic_df.iterrows():
             point = Point(row['LONGITUDE'], row['LATITUDE'])
             if row['LONGITUDE'] != 0.0 and row['LATITUDE'] != 0.0:
@@ -154,6 +163,8 @@ def transform_and_load(context: OpExecutionContext, violations_df: pd.DataFrame,
     
         context.log.info("Added new runtime field CRASH_PLACE to crahses.")
         logging.info("Added new runtime field CRASH_PLACE to crahses.")
+
+        # Fetching VIOLATION_PLACE with shape file and geo pandas
         for idx, row in violations_df.iterrows():
             point = Point(row['longitude'], row['latitude'])
             if row['longitude'] != 0.0 and row['latitude'] != 0.0:
@@ -164,7 +175,7 @@ def transform_and_load(context: OpExecutionContext, violations_df: pd.DataFrame,
         context.log.info("Added new runtime field VIOLATION_PLACE to violations.")  
         logging.info("Added new runtime field VIOLATION_PLACE to violations.")                
         violations_df.rename(columns={col: col.upper() for col in violations_df.columns}, inplace=True)                     
-
+        # REnamng common columns in both 
         for col_name in traffic_df.columns.intersection(violations_df.columns):
             traffic_df.rename(columns={col_name: f"CRASH_{col_name}"}, inplace=True)
             violations_df.rename(columns={col_name: f"VIOLATION_{col_name}"}, inplace=True)
@@ -210,9 +221,11 @@ def transform_and_load(context: OpExecutionContext, violations_df: pd.DataFrame,
                         'VIOLATION_PLACE' : 'string'
                     })
         
+        #adding common filed DATE_R in both
         traffic_df['DATE_R'] = pd.to_datetime(traffic_df['CRASH_DATE']).dt.date
         violations_df['DATE_R'] = pd.to_datetime(violations_df['VIOLATION_DATE']).dt.date
 
+        #Merging with help of common column
         traffic_df['merge_index'] = traffic_df.groupby('DATE_R').cumcount()
         violations_df['merge_index'] = violations_df.groupby('DATE_R').cumcount()
 
@@ -238,7 +251,7 @@ def transform_and_load(context: OpExecutionContext, violations_df: pd.DataFrame,
         try:
             with engine.connect() as connection:
                 connection.execution_options(isolation_level="AUTOCOMMIT")
-                # Assuming 'combined_df' is a DataFrame containing the data to be loaded
+                # Loading Merged Df to postgresql in datatable
                 merged_df.to_sql('datatable', connection, if_exists='replace', index=False)
                 context.log.info("Data Successfully loaded into postgresql DataBase.")
                 logging.info("Data Successfully loaded into postgresql DataBase.")
